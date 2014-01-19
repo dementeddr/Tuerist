@@ -26,6 +26,8 @@ public class TuerRestClient {
 		params.put("lng", data[1]);
 		params.put("bearing", data[2]);
 		params.put("focus", data[3]);
+		
+		Log.v("Tuerist", "Attempting to POST: " + data[0] + " " + data[1] + " " + data[2]);
 
 		client.post(URL, params, new AsyncHttpResponseHandler() {
 			@Override

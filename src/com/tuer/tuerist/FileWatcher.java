@@ -21,8 +21,9 @@ public class FileWatcher extends FileObserver {
 		
 		if(event == FileObserver.CREATE && !path.equals(".probe")){
 		
-			main.sendNotification();
-			Log.v("Tuerist", "Photo");
+			Log.v("Tuerist", "Picture taken");
+
+			main.onNewPictureDetected();
 //			main.updateData();
 //			main.sendData();
 		}
