@@ -36,15 +36,17 @@ public class MainActivity extends Activity implements SensorEventListener {
 
 	private FileObserver observer;
 	private TuerLocationListener locationListener;
+	
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private Sensor magnetometer;
 	private float[] gravity;
 	private float[] geomagnetic;
 	private double azimut;
-	//private Double lat;
-	//private Double lng;
-	//private Double bearing;
+	
+	SharedPreferences prefs;
+	Editor editor;
+	
 	private String slat;
 	private String slng;
 	private String sbearing;
@@ -57,21 +59,26 @@ public class MainActivity extends Activity implements SensorEventListener {
 		Camera object = null;
 		try {
 			object = Camera.open(); 
-		}
-		catch (Exception e){
+		} catch (Exception e){
+			Log.e("Tuerist", "Problem aquiring camera: " + e.getMessage());
 		}
 
 		return object; 
 	}
 
+	/**
+	 * Called when the Activity (which basically means the app) is created.
+	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		//Watches the Camera directory for added pictures
 		observer = new FileWatcher("/sdcard/DCIM/Camera", this);
 		observer.startWatching();
 
+		//Used to determine azimuth
 		locationListener = new TuerLocationListener();
 		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
@@ -79,58 +86,19 @@ public class MainActivity extends Activity implements SensorEventListener {
 		sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-
-		//		camera = isCameraAvailable();
-		//		cv = new CameraView(this, camera);
-		//		FrameLayout preview = (FrameLayout)findViewById(R.id.camera_preview);
-		//		preview.addView(cv);
+		
+		//Used to save data during pauses
+		prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
+		editor = prefs.edit();
 	}
-
-	/*
-	private PictureCallback capturedIt = new PictureCallback () {
-		@Override
-		public void onPictureTaken(byte[] data, Camera camera) {
-
-			Bitmap bitmap = BitmapFactory.decodeByteArray(data , 0, data .length);
-			if (bitmap == null) {
-				Log.v("Tuerist", "not taken");
-			} else {
-				Log.v("Tuerist", "taken");
-			}
-			camera.release();
-		}
-	};*/
-	/*
-	public void onClick(View view) {
-		camera.takePicture(new Camera.ShutterCallback() {
-			@Override
-			public void onShutter() {
-				// log some shit
-				Location l = locationListener.getLastLocation();
-				if (l != null) {
-					Log.v("Tuerist", "Position: " + l.getLatitude() + ", " + l.getLongitude());
-				}
-				Log.v("Tuerist", "Azimuth: " + azimut);
-			}
-		}, null, new Camera.PictureCallback() {
-			public void onPictureTaken(byte[] imageData, Camera c) {
-				//do what you want with the imageData. Like make it into a bmp (ill show how to below)
-				InputStream is = new ByteArrayInputStream(imageData);
-				Bitmap bmp = BitmapFactory.decodeStream(is); //now do what you want with it.
-				camera.release();
-			} 
-
-		});
-	}*/
-
+	
 	/**
-	 * Executes when a different app is brought up. Saves the current location values
+	 * Executes when a different app is brought up. Saves the current location values.
 	 */
 	protected void onPause() {
 		super.onPause();
+		
 		try {
-			SharedPreferences prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
-			Editor editor = prefs.edit();
 			Location l = locationListener.getLastLocation();
 			
 			String lat = Double.valueOf(l.getLatitude()).toString();
@@ -139,9 +107,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 			
 			Log.v("Tuerism", "onPause lat: " + lat + "  lng: " + lng + "  bearing: " + bearing);
 			
+			//Cleans out the data storage and adds the current data
+			editor.clear();
 			editor.putString("lat", lat);
 			editor.putString("lng", lng);
 			editor.putString("bearing", bearing);
+			editor.putBoolean("dataSent", false);
 			editor.commit();
 			
 		} catch (Exception e) {
@@ -149,6 +120,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 		}
 	}
 
+	
+	/**
+	 * Reads the location values back in when the app resumes
+	 */
 	protected void onResume() {
 		super.onResume();
 
@@ -208,16 +183,26 @@ public class MainActivity extends Activity implements SensorEventListener {
 		mNotificationManager.notify(mId, message);
 	}
 
+	
+	/**
+	 * Adds the picture data to a RequestParams and sends it to the POST function.
+	 */
 	public void sendData() {
 		try {
-			RequestParams params = new RequestParams();
+			String data[] = {slat.toString(), slng.toString(), sbearing.toString(), Double.valueOf(15).toString()};
 
-			params.put("lat", slat.toString());
-			params.put("lng", slng.toString());
-			params.put("bearing", sbearing.toString());
-			params.put("focus", Double.valueOf(15).toString());
-
-			TuerRestClient.post(params);
+			Log.v("Tuerism", "sendData lat: " + slat.toString() + "  lng: " 
+					+ slng.toString() + "  bearing: " + sbearing.toString());
+			
+			boolean successful = TuerRestClient.post(data);
+			
+			if (successful) {
+				editor.clear();
+				editor.commit();
+			} else {
+				Log.e("Tuerist", "Unable to post data to server");
+			}
+			
 		} catch (Exception e) {
 			Log.e("Tuerist", "Exeption in sendData");
 		}
@@ -243,5 +228,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 				azimut = Math.toDegrees(orientation[0]) + 180 ; // orientation contains: azimut, pitch and roll
 			}
 		}
+	}
+	
+	public void onDestroy() {
+		editor.clear();
+		editor.commit();
 	}
 }
