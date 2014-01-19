@@ -1,7 +1,9 @@
 package com.tuer.tuerist;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.FileObserver;
+import android.util.Log;
 
 public class FileWatcher extends FileObserver {
 	
@@ -10,7 +12,7 @@ public class FileWatcher extends FileObserver {
 	public FileWatcher(String path, MainActivity main) {
 		super(path);
 		// TODO Auto-generated constructor stub
-		this.startWatching();
+//		this.startWatching();
 		this.main = main;
 	}
 
@@ -20,6 +22,9 @@ public class FileWatcher extends FileObserver {
 		if(event == FileObserver.CREATE && !path.equals(".probe")){
 		
 			main.sendNotification();
+			Log.v("Tuerist", "Photo");
+//			main.updateData();
+//			main.sendData();
 		}
 	}
 

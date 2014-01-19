@@ -25,8 +25,8 @@ public final class R {
     }
     public static final class id {
         public static final int action_settings=0x7f080002;
-        public static final int button1=0x7f080001;
-        public static final int textView1=0x7f080000;
+        public static final int button_capture=0x7f080001;
+        public static final int camera_preview=0x7f080000;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;
