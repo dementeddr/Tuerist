@@ -32,7 +32,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.FrameLayout;
 
-public class MainActivity extends Activity implements OnClickListener, SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener {
 
 	private FileObserver observer;
 	private TuerLocationListener locationListener;
@@ -42,9 +42,9 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 	private float[] gravity;
 	private float[] geomagnetic;
 	private double azimut;
-	private Double lat;
-	private Double lng;
-	private Double bearing;
+	//private Double lat;
+	//private Double lng;
+	//private Double bearing;
 	private String slat;
 	private String slng;
 	private String sbearing;
@@ -68,7 +68,7 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
 		observer = new FileWatcher("/sdcard/DCIM/Camera", this);
 		observer.startWatching();
 
@@ -80,12 +80,13 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
-//		camera = isCameraAvailable();
-//		cv = new CameraView(this, camera);
-//		FrameLayout preview = (FrameLayout)findViewById(R.id.camera_preview);
-//		preview.addView(cv);
+		//		camera = isCameraAvailable();
+		//		cv = new CameraView(this, camera);
+		//		FrameLayout preview = (FrameLayout)findViewById(R.id.camera_preview);
+		//		preview.addView(cv);
 	}
 
+	/*
 	private PictureCallback capturedIt = new PictureCallback () {
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
@@ -98,8 +99,8 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 			}
 			camera.release();
 		}
-	};
-
+	};*/
+	/*
 	public void onClick(View view) {
 		camera.takePicture(new Camera.ShutterCallback() {
 			@Override
@@ -110,9 +111,6 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 					Log.v("Tuerist", "Position: " + l.getLatitude() + ", " + l.getLongitude());
 				}
 				Log.v("Tuerist", "Azimuth: " + azimut);
-				//float len = camera.getParameters().getFocalLength();
-				//				camera.getParameters().getFocusDistances(focus);
-				//Log.v("Tuerist", "Focus: " + len);
 			}
 		}, null, new Camera.PictureCallback() {
 			public void onPictureTaken(byte[] imageData, Camera c) {
@@ -123,18 +121,29 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 			} 
 
 		});
-	}
-	
+	}*/
+
+	/**
+	 * Executes when a different app is brought up. Saves the current location values
+	 */
 	protected void onPause() {
 		super.onPause();
 		try {
-		SharedPreferences prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
-		Editor e = prefs.edit();
-		Location l = locationListener.getLastLocation();
-		e.putString("lat", Double.valueOf(l.getLatitude()).toString());
-		e.putString("lng", Double.valueOf(l.getLongitude()).toString());
-		e.putString("bearing", Double.valueOf(azimut).toString());
-		e.commit();
+			SharedPreferences prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
+			Editor editor = prefs.edit();
+			Location l = locationListener.getLastLocation();
+			
+			String lat = Double.valueOf(l.getLatitude()).toString();
+			String lng = Double.valueOf(l.getLongitude()).toString();
+			String bearing = Double.valueOf(azimut).toString();
+			
+			Log.v("Tuerism", "onPause lat: " + lat + "  lng: " + lng + "  bearing: " + bearing);
+			
+			editor.putString("lat", lat);
+			editor.putString("lng", lng);
+			editor.putString("bearing", bearing);
+			editor.commit();
+			
 		} catch (Exception e) {
 			Log.e("Tuerist", e.getMessage());
 		}
@@ -146,7 +155,7 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 		try {
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
 			sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
-			
+
 			boolean temp = getIntent().getBooleanExtra("sendData", false);
 			SharedPreferences prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
 			slat = prefs.getString("lat", "0");
@@ -193,7 +202,7 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 
 		NotificationManager mNotificationManager =
 				(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		
+
 		// mId allows you to update the notification later on.
 		int mId = 42;
 		mNotificationManager.notify(mId, message);
@@ -202,15 +211,15 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 	public void sendData() {
 		try {
 			RequestParams params = new RequestParams();
-			Log.v("Tuerist", "lat: " + slat);
+
 			params.put("lat", slat.toString());
 			params.put("lng", slng.toString());
 			params.put("bearing", sbearing.toString());
 			params.put("focus", Double.valueOf(15).toString());
-	
+
 			TuerRestClient.post(params);
 		} catch (Exception e) {
-			Log.e("Tuerist", "asdf");
+			Log.e("Tuerist", "Exeption in sendData");
 		}
 	}
 
@@ -231,7 +240,7 @@ public class MainActivity extends Activity implements OnClickListener, SensorEve
 			if (success) {
 				float orientation[] = new float[3];
 				SensorManager.getOrientation(R, orientation);
-				azimut = Math.toDegrees(orientation[0]) + 180; // orientation contains: azimut, pitch and roll
+				azimut = Math.toDegrees(orientation[0]) + 180 ; // orientation contains: azimut, pitch and roll
 			}
 		}
 	}
