@@ -54,12 +54,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private String slat;
 	private String slng;
 	private String sbearing;
-	//private float focalLength;
-
-	//private Camera camera;
-	//private CameraView cv;
 	
-	private int pictureCount;
+	//private int pictureCount;
 
 
 	public static Camera isCameraAvailable(){
@@ -86,29 +82,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 		observer = new FileWatcher("/sdcard/DCIM/Camera", this);
 		observer.startWatching();
 		
-		//Makes sure the button corresponds with the right function. I hope.
-		/*Button sendButton = (Button)findViewById(R.id.button_capture);
-		sendButton.setOnClickListener(new OnClickListener() {
-			  @Override
-			  public void onClick(View v) {
-				  readLocationFile(v);
-			  }
-			});
-
-		try {//TODO REMOVE
-			FileOutputStream fout = openFileOutput(saveFile, Context.MODE_PRIVATE);
-			fout.write("success".getBytes());
-			fout.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NullPointerException e) {
-			Log.e("Tuerist", "FRAAAACK");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
 		//Used to determine azimuth
 		locationListener = new TuerLocationListener();
 		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
@@ -122,9 +95,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 		//prefs = this.getSharedPreferences("com.tuer.tuerist", Context.MODE_PRIVATE);
 		//editor = prefs.edit();
 		
-		pictureCount = 0;//TODO Need to make count persistent
+		//pictureCount = 0;//TODO Need to make count persistent
 	}
 
+	
 	/**
 	 * Executes when a different app is brought up. Saves the current location values.
 	 */
@@ -186,6 +160,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		return true;
 	}
 
+	
 	/**
 	 * Creates a notification to ask if the user wants to send 
 	 * the picture data to the server
@@ -203,8 +178,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 		Notification message =
 				new NotificationCompat.Builder(this)
 		.setSmallIcon(R.drawable.ic_launcher)
-		.setContentTitle("Tuerist picture data captured")
-		.setContentText("Send data to Tuerist server?")
+		.setContentTitle("Picture data captured.")
+		.setContentText("Send data to Tuer server?")
 		.setContentIntent(pIntent).build();
 
 		// Hide the notification after its selected
@@ -218,6 +193,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		mNotificationManager.notify(mId, message);
 	}
 
+	
 	/**
 	 * Called when a new picture is taken. Is NOT an API method.
 	 */
@@ -231,7 +207,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	/**
 	 * Adds the picture data to a RequestParams and sends it to the POST function.
 	 */
-	public void sendData() {
+	/*public void sendData() {
 		try {
 			//RequestParams moved to TuerRestClient for debug purposes.
 			String data[] = {slat.toString(), slng.toString(), sbearing.toString(), Double.valueOf(15).toString()};
@@ -242,6 +218,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			//If POST request was successful, the data can be cleared.
 			boolean successful = TuerRestClient.post(data);
 
+			//If the 
 			if (successful) {
 				editor.clear();
 				editor.commit();
@@ -252,7 +229,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		} catch (Exception e) {
 			Log.e("Tuerist", "Exeption in sendData");
 		}
-	}
+	}*/
 
 
 	/**
@@ -262,6 +239,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	public void onAccuracyChanged(Sensor arg0, int arg1) {
 	}
 
+	
 	/**
 	 * Used to keep azimut up to date.
 	 */
@@ -294,6 +272,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		try {
 			fos = openFileOutput(saveFile,Context.MODE_PRIVATE & Context.MODE_APPEND);
 			
+			//writing the three data pieces on individual lines
 			String output = location.getLatitude() + "\n" + location.getLongitude() 
 					+ "\n" + location.getBearing() + "\n"; 
 			Log.v("Tuerist", "Writing Data to file: " + output);
@@ -301,12 +280,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 			fos.write(output.getBytes());
 			fos.close();
 			
+			//On success
+			Log.v("Tuerist", "Picture data written successfully");
+			return true;
+			
 		} catch (IOException e) {
 			Log.e("Tuerist", "Data failed to write: " + e.getMessage());
 			return false;
 		}
-		Log.v("Tuerist", "Picture data written successfully");
-		return true;
 	}
 	
 	
@@ -316,6 +297,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	 */
 	private boolean readLocationFile(View view) {
 		try {
+			//Check if the file exists
 	        File f = new File(saveFile);
 	        if (!f.exists()) {
 	        	Log.v("Tuerist", "No data to POST");
@@ -329,7 +311,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			String data[] = new String[4];
 			boolean successful = false;
 			
-			//Reads three pieces of data at a time and Posts them.
+			//Reads three pieces of data at a time and POSTs them.
 	        while ((line = reader.readLine()) != null) {
 	        	data[0] = line;
 	        	data[1] = reader.readLine();
@@ -351,25 +333,26 @@ public class MainActivity extends Activity implements SensorEventListener {
 	        reader.close();
 	        fis.close();
 	        
-			//f.delete();
+	        //If sending the data was successful, cleans out the local data.
+			f.delete();
+			Log.v("Tuerist", "Picture data file read successfully");
+			return true;
 
 		} catch (IOException e) {
 			Log.e("Tuerist", "Failed to read data file: " + e.getMessage());
 			return false;
 		} catch (NullPointerException e) {
-			Log.e("Turiest", "So it is here");
+			Log.e("Turiest", "There is a null pointer in readLocationData.");
 			return false;
 		}
-		Log.v("Tuerist", "Picture data file read successfully");
-		return true;
 	}
 
 
 	/**
 	 * Make sure pictures data goes away on exit
 	 */
-	public void onDestroy() {
+	/*public void onDestroy() {
 		editor.clear();
 		editor.commit();
-	}
+	}*/
 }
